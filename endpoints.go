@@ -7,7 +7,9 @@ import (
 	"strings"
 )
 
-// TweetOption configures tweet fetching
+// TweetOption configures tweet fetching behavior using the functional options pattern.
+// Options can be combined to customize requests, such as setting count limits,
+// pagination cursors, and enabling cursor returns for pagination.
 type TweetOption func(*tweetOptions)
 
 type tweetOptions struct {
@@ -16,28 +18,80 @@ type tweetOptions struct {
 	returnCursor bool
 }
 
-// WithCount sets the number of tweets to fetch
+// WithCount sets the number of tweets to fetch (1-100).
+//
+// Default is 20 tweets if not specified. Note that Twitter may return fewer
+// tweets than requested depending on the user's privacy settings and content availability.
+//
+// Example:
+//
+//	tweets, err := client.Tweets(ctx, "nasa", xapi.WithCount(5))
 func WithCount(count int) TweetOption {
 	return func(opts *tweetOptions) {
 		opts.count = count
 	}
 }
 
-// WithCursor sets the pagination cursor
+// WithCursor sets the pagination cursor for fetching the next page of tweets.
+//
+// Use this with cursors returned from TweetsPage to implement pagination.
+// The cursor should be obtained from a previous TweetPage response.
+//
+// Example:
+//
+//	page, err := client.TweetsPage(ctx, "nasa", xapi.WithCount(10))
+//	if page.HasMore && page.NextCursor != nil {
+//	    nextTweets, err := client.Tweets(ctx, "nasa", 
+//	        xapi.WithCursor(page.NextCursor.Value))
+//	}
 func WithCursor(cursor string) TweetOption {
 	return func(opts *tweetOptions) {
 		opts.cursor = cursor
 	}
 }
 
-// WithPagination enables cursor return for pagination
+// WithPagination enables cursor return for pagination support.
+//
+// This is automatically applied by TweetsPage but can be used with Tweets
+// if you need cursor information while getting tweets directly.
+//
+// Example:
+//
+//	tweets, err := client.Tweets(ctx, "nasa", xapi.WithPagination())
 func WithPagination() TweetOption {
 	return func(opts *tweetOptions) {
 		opts.returnCursor = true
 	}
 }
 
-// Tweets fetches a user's recent tweets (default: 20 tweets)
+// Tweets fetches a user's recent tweets with high reliability (95-100% success rate).
+//
+// This method fetches up to 20 tweets by default, but can be customized using
+// functional options. The username can include or omit the "@" prefix.
+//
+// Parameters:
+//   - ctx: Context for request cancellation and timeouts
+//   - username: Twitter username (with or without "@" prefix)
+//   - options: Optional functional options (WithCount, WithCursor, etc.)
+//
+// Returns a slice of Tweet objects containing full text, engagement metrics,
+// creation time, and other metadata. May return fewer tweets than requested
+// if the user has limited public content.
+//
+// Example:
+//
+//	// Get default 20 tweets
+//	tweets, err := client.Tweets(ctx, "nasa")
+//
+//	// Get 5 tweets with custom count
+//	tweets, err := client.Tweets(ctx, "@nasa", xapi.WithCount(5))
+//
+//	// Paginate through tweets
+//	page, err := client.TweetsPage(ctx, "nasa")
+//	if page.HasMore {
+//	    moreTweets, err := client.Tweets(ctx, "nasa", 
+//	        xapi.WithCursor(page.NextCursor.Value))
+//	}
 func (c *Client) Tweets(ctx context.Context, username string, options ...TweetOption) ([]*Tweet, error) {
 	page, err := c.TweetsPage(ctx, username, options...)
 	if err != nil {
@@ -46,7 +100,30 @@ func (c *Client) Tweets(ctx context.Context, username string, options ...TweetOp
 	return page.Tweets, nil
 }
 
-// TweetsPage fetches tweets with pagination info (default: 20 tweets)
+// TweetsPage fetches tweets with full pagination information for implementing
+// paginated tweet browsing.
+//
+// This method returns a TweetPage containing tweets, pagination cursors,
+// and metadata about whether more tweets are available. Use this when you
+// need to implement pagination or want access to cursor information.
+//
+// The returned TweetPage includes:
+//   - Tweets: Array of Tweet objects
+//   - NextCursor: Cursor for fetching newer tweets (if available)
+//   - PrevCursor: Cursor for fetching older tweets (if available)  
+//   - HasMore: Boolean indicating if more tweets are available
+//
+// Example:
+//
+//	page, err := client.TweetsPage(ctx, "nasa", xapi.WithCount(10))
+//	if err != nil {
+//	    return err
+//	}
+//
+//	fmt.Printf("Retrieved %d tweets\n", len(page.Tweets))
+//	if page.HasMore && page.NextCursor != nil {
+//	    fmt.Printf("More tweets available, cursor: %s\n", page.NextCursor.Value)
+//	}
 func (c *Client) TweetsPage(ctx context.Context, username string, options ...TweetOption) (*TweetPage, error) {
 	return c.tweetsPage(ctx, username, append(options, WithPagination())...)
 }

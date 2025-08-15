@@ -4,7 +4,22 @@ import (
 	"time"
 )
 
-// User represents a Twitter user profile
+// User represents a comprehensive Twitter user profile with all available metadata.
+//
+// This structure contains detailed information about a Twitter user including
+// their basic profile information, statistics, verification status, and media URLs.
+// All fields are populated from Twitter's API response when available.
+//
+// Key fields:
+//   - ID/RestID: Unique Twitter user identifier
+//   - Name: Display name (e.g., "NASA")
+//   - ScreenName: Username without @ (e.g., "nasa")
+//   - Description: User bio/description text
+//   - FollowersCount: Number of followers
+//   - FriendsCount: Number of accounts following
+//   - StatusesCount: Total number of tweets
+//   - Verified/IsBlueVerified: Verification status
+//   - ProfileImageURL/ProfileBannerURL: Profile media
 type User struct {
 	ID                        string    `json:"id"`
 	RestID                    string    `json:"rest_id"`
@@ -94,7 +109,22 @@ type Broadcast struct {
 	IsLiveBroadcast bool   `json:"is_live_broadcast"`
 }
 
-// Tweet represents a Twitter tweet/post
+// Tweet represents a Twitter tweet/post with comprehensive metadata and engagement metrics.
+//
+// This structure contains all available information about a tweet including
+// its content, engagement statistics, creation time, and related metadata.
+// The Author field may be populated with user information when available.
+//
+// Key fields:
+//   - ID/RestID: Unique tweet identifier
+//   - FullText: Complete tweet text content
+//   - CreatedAt: When the tweet was posted
+//   - FavoriteCount: Number of likes/hearts
+//   - RetweetCount: Number of retweets
+//   - ReplyCount: Number of replies
+//   - ViewCount: Number of views (when available)
+//   - Author: User object for tweet author (optional)
+//   - ConversationID: Thread identifier for replies
 type Tweet struct {
 	ID              string    `json:"id"`
 	RestID          string    `json:"rest_id"`
