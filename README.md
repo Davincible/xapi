@@ -1,5 +1,7 @@
 # xapi - Production-Ready Twitter API Client
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/Davincible/xapi.svg)](https://pkg.go.dev/github.com/Davincible/xapi)
+
 A high-performance Go client for Twitter's API with **95-100% success rates**, intelligent caching, and production-grade reliability.
 
 ## 🚀 Key Features
